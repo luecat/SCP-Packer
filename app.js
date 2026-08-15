@@ -96,6 +96,49 @@ function zip(entries) {
 
 function resource(hash) { return { hash, url: `/sonolus/repository/${hash}` }; }
 
+let templatePromise;
+async function readZip(bytes) {
+  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  let end = -1;
+  for (let at = bytes.length - 22; at >= Math.max(0, bytes.length - 65557); at--) {
+    if (view.getUint32(at, true) === 0x06054b50) { end = at; break; }
+  }
+  if (end < 0) throw new Error('資源模板不是有效的 ZIP。');
+  const count = view.getUint16(end + 10, true); let at = view.getUint32(end + 16, true);
+  const files = [];
+  for (let index = 0; index < count; index++) {
+    if (view.getUint32(at, true) !== 0x02014b50) throw new Error('資源模板目錄損壞。');
+    const method = view.getUint16(at + 10, true); const compressedSize = view.getUint32(at + 20, true);
+    const nameLength = view.getUint16(at + 28, true); const extraLength = view.getUint16(at + 30, true); const commentLength = view.getUint16(at + 32, true);
+    const name = new TextDecoder().decode(bytes.slice(at + 46, at + 46 + nameLength)); const local = view.getUint32(at + 42, true);
+    const localNameLength = view.getUint16(local + 26, true); const localExtraLength = view.getUint16(local + 28, true);
+    const compressed = bytes.slice(local + 30 + localNameLength + localExtraLength, local + 30 + localNameLength + localExtraLength + compressedSize);
+    let data;
+    if (method === 0) data = compressed;
+    else if (method === 8 && 'DecompressionStream' in window) data = new Uint8Array(await new Response(new Blob([compressed]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).arrayBuffer());
+    else throw new Error('瀏覽器無法讀取資源模板。');
+    if (name && !name.endsWith('/')) files.push({ name, data });
+    at += 46 + nameLength + extraLength + commentLength;
+  }
+  return files;
+}
+async function loadTemplate() {
+  templatePromise ??= fetch('assets/sonolus-template.scp').then(async response => {
+    if (!response.ok) throw new Error('找不到完整資源模板。');
+    return readZip(new Uint8Array(await response.arrayBuffer()));
+  });
+  return templatePromise;
+}
+function templateEngine(files) {
+  const detail = files.find(file => file.name === 'sonolus/engines/chcy-pjsekai-engine-extended');
+  if (!detail) throw new Error('資源模板缺少引擎資料。');
+  const engine = JSON.parse(new TextDecoder().decode(detail.data)).item;
+  // Retain every engine resource in the package while omitting playData from
+  // this level record so the converted USC note archetypes remain playable.
+  delete engine.playData;
+  return engine;
+}
+
 packButton.addEventListener('click', async () => {
   const uscFile = $('#usc').files[0];
   const bgmFile = $('#bgm').files[0];
@@ -107,14 +150,20 @@ packButton.addEventListener('click', async () => {
     packButton.disabled = true; packButton.innerHTML = '<span>↻</span> 正在打包…'; status.textContent = '正在建立資源雜湊與 SCP 封包…';
     let uscRoot;
     try { uscRoot = JSON.parse(await uscFile.text()); } catch { throw new Error('USC 不是有效的 JSON 檔案。'); }
+    const template = await loadTemplate();
     const packedLevel = await gzip(encoder.encode(JSON.stringify(uscToLevelData(uscRoot))));
     const levelHash = await sha1(packedLevel);
     const levelName = randomId();
-    const entries = [{ name: 'sonolus/package', data: encoder.encode('{"shouldUpdate":false}') }, { name: `sonolus/repository/${levelHash}`, data: packedLevel }];
-    const item = { name: levelName, version: 1, rating: Number($('#rating').value) || 0, title, artists: $('#artist').value.trim(), author: $('#author').value.trim(), tags: [], engine: { name: 'usc-local', version: 1, title: 'USC Local', subtitle: 'Packed locally', author: 'SCP Packer', tags: [] }, data: resource(levelHash) };
+    const entries = [...template, { name: 'sonolus/package', data: encoder.encode('{"shouldUpdate":false}') }, { name: `sonolus/repository/${levelHash}`, data: packedLevel }];
+    const item = { name: levelName, version: 1, rating: Number($('#rating').value) || 0, title, artists: $('#artist').value.trim(), author: $('#author').value.trim(), tags: [], engine: templateEngine(template), data: resource(levelHash) };
     { const bytes = new Uint8Array(await bgmFile.arrayBuffer()); const hash = await sha1(bytes); entries.push({ name: `sonolus/repository/${hash}`, data: bytes }); item.bgm = resource(hash); }
     const detail = encoder.encode(JSON.stringify({ item }));
-    entries.push({ name: `sonolus/levels/${levelName}`, data: detail });
+    const levelList = encoder.encode(JSON.stringify({ pageCount: 1, items: [item] }));
+    entries.push(
+      { name: 'sonolus/levels/info', data: encoder.encode('{"shouldUpdate":false}') },
+      { name: 'sonolus/levels/list', data: levelList },
+      { name: `sonolus/levels/${levelName}`, data: detail },
+    );
     const blob = zip(entries); const url = URL.createObjectURL(blob); const anchor = document.createElement('a'); anchor.href = url; anchor.download = `${filenameSafe(title)}.scp`; anchor.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
     status.textContent = `完成：已建立 ${entries.length} 個資源的 SCP 封包（${(blob.size / 1024 / 1024).toFixed(2)} MB）。`;
   } catch (error) { console.error(error); status.textContent = `打包失敗：${error.message || error}`; }
