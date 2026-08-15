@@ -123,7 +123,7 @@ async function readZip(bytes) {
   return files;
 }
 async function loadTemplate() {
-  templatePromise ??= fetch('assets/sonolus-template.scp').then(async response => {
+  templatePromise ??= fetch('assets/sonolus-engine-template.scp').then(async response => {
     if (!response.ok) throw new Error('找不到完整資源模板。');
     return readZip(new Uint8Array(await response.arrayBuffer()));
   });
@@ -155,7 +155,7 @@ packButton.addEventListener('click', async () => {
     const levelHash = await sha1(packedLevel);
     const levelName = randomId();
     const entries = [...template, { name: 'sonolus/package', data: encoder.encode('{"shouldUpdate":false}') }, { name: `sonolus/repository/${levelHash}`, data: packedLevel }];
-    const item = { name: levelName, version: 1, rating: Number($('#rating').value) || 0, title, artists: $('#artist').value.trim(), author: $('#author').value.trim(), tags: [], engine: templateEngine(template), data: resource(levelHash) };
+    const item = { name: levelName, version: 1, rating: Number($('#rating').value) || 0, title, artists: $('#artist').value.trim(), author: $('#author').value.trim(), tags: [], engine: templateEngine(template), useSkin: { useDefault: true }, useBackground: { useDefault: true }, useEffect: { useDefault: true }, useParticle: { useDefault: true }, data: resource(levelHash) };
     { const bytes = new Uint8Array(await bgmFile.arrayBuffer()); const hash = await sha1(bytes); entries.push({ name: `sonolus/repository/${hash}`, data: bytes }); item.bgm = resource(hash); }
     const detail = encoder.encode(JSON.stringify({ item }));
     const levelList = encoder.encode(JSON.stringify({ pageCount: 1, items: [item] }));
