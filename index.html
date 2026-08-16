@@ -4,36 +4,28 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#f5eee4" />
-    <title>A SCP Packer</title>
-    <meta name="description" content="Pack USC charts and music into SCP files." />
-    <meta property="og:title" content="A SCP Packer" />
-    <meta property="og:description" content="Pack USC charts and music into SCP files." />
+    <title>Gugarythm Packer</title>
+    <meta name="description" content="Pack USC charts and music into Gugarythm GGR files." />
+    <meta property="og:title" content="Gugarythm Packer" />
+    <meta property="og:description" content="Pack USC charts and music into Gugarythm GGR files." />
     <meta property="og:type" content="website" />
-    <meta property="og:url" content="https://scp.luecat.com/" />
     <meta name="twitter:card" content="summary" />
-    <meta name="twitter:title" content="A SCP Packer" />
-    <meta name="twitter:description" content="Pack USC charts and music into SCP files." />
+    <meta name="twitter:title" content="Gugarythm Packer" />
+    <meta name="twitter:description" content="Pack USC charts and music into Gugarythm GGR files." />
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
     <main class="shell">
-      <header class="hero">
-        <a class="brand" href="#top" aria-label="SCP Packer 首頁">
-          <span class="brand-mark">S</span>
-          <span>SCP <b>PACKER</b></span>
-        </a>
-      </header>
-
+      <header class="hero"><a class="brand" href="#top" aria-label="Gugarythm Packer 首頁"><span class="brand-mark">G</span><span>GUGARYTHM <b>PACKER</b></span></a></header>
       <section class="intro" id="top">
-        <h1>把譜面，<em>收進一個 .scp。</em></h1>
-        <p class="lede">選擇 USC 譜面與音樂，填入曲目資料，在瀏覽器直接產生 SCP 檔。</p>
-        <p class="scope-note">本網站只需要選擇譜面與音樂。</p>
+        <h1>把譜面，<em>收進一個 .ggr。</em></h1>
+        <p class="lede">選擇 USC 譜面與音樂，填入曲目資料，在瀏覽器直接產生 Gugarythm 封包。</p>
+        <p class="scope-note">所有檔案只在你的瀏覽器處理，不會上傳。</p>
       </section>
-
-      <section class="workspace" aria-label="SCP 打包表單">
+      <section class="workspace" aria-label="Gugarythm 打包表單">
         <div class="form-grid">
           <section class="panel metadata">
-            <div class="panel-title"><span>01</span><div><h2>曲目資料</h2><p>這些資料會寫入封包的曲目資訊。</p></div></div>
+            <div class="panel-title"><span>01</span><div><h2>曲目資料</h2><p>這些資料會寫入封包的 manifest.json。</p></div></div>
             <div class="fields">
               <label class="wide">曲名<input id="title" type="text" placeholder="例：DOMiNUS_GRAiL" required /></label>
               <label>藝術家<input id="artist" type="text" placeholder="例：xi" /></label>
@@ -42,34 +34,20 @@
               <label>音樂偏移（秒）<input id="offset" type="number" step="0.001" value="0" /></label>
             </div>
           </section>
-
           <section class="panel assets">
             <div class="panel-title"><span>02</span><div><h2>加入檔案</h2></div></div>
             <div class="drop-list">
-              <label class="drop-zone required" data-for="usc">
-                <input id="usc" type="file" accept=".usc,application/json" />
-                <span class="file-icon">⌁</span><span><b>USC 譜面</b><small>Universal Sonolus Chart · .usc</small></span><output>選擇檔案</output>
-              </label>
-              <label class="drop-zone required" data-for="bgm">
-                <input id="bgm" type="file" accept="audio/*,.mp3,.ogg,.wav,.m4a,.aac,.flac" />
-                <span class="file-icon">♪</span><span><b>BGM</b><small>MP3、OGG、WAV、M4A…</small></span><output>選擇檔案</output>
-              </label>
+              <label class="drop-zone required"><input id="usc" type="file" accept=".usc,application/json" /><span class="file-icon">⌁</span><span><b>USC 譜面</b><small>Universal Sonolus Chart · .usc</small></span><output>選擇檔案</output></label>
+              <label class="drop-zone required"><input id="bgm" type="file" accept="audio/*,.mp3,.ogg,.wav,.m4a,.aac,.flac" /><span class="file-icon">♪</span><span><b>音樂</b><small>MP3、OGG、WAV、M4A、AAC、FLAC</small></span><output>選擇檔案</output></label>
+              <label class="drop-zone"><input id="cover" type="file" accept="image/png,image/jpeg,image/webp,.png,.jpg,.jpeg,.webp" /><span class="file-icon">▧</span><span><b>封面（選填）</b><small>PNG、JPEG、WebP</small></span><output>選擇檔案</output></label>
             </div>
           </section>
         </div>
-
-        <section class="panel output-panel">
-          <div class="panel-title"><span>03</span><div><h2>建立封包</h2><p id="status" aria-live="polite">準備完成後，按下打包按鈕。</p></div></div>
-          <button id="pack" class="pack-button" type="button"><span>↓</span> 下載 SCP 封包</button>
-        </section>
+        <section class="panel output-panel"><div class="panel-title"><span>03</span><div><h2>建立封包</h2><p id="status" aria-live="polite">準備完成後，按下打包按鈕。</p></div></div><button id="pack" class="pack-button" type="button"><span>↓</span> 下載 GGR 封包</button></section>
       </section>
-
-      <section class="howto">
-        <div><p class="eyebrow">HOW TO USE</p><h2>兩個檔案，一次完成。</h2></div>
-        <ol><li><b>1</b> 選擇你的 USC 譜面。</li><li><b>2</b> 加入音樂並填寫資料。</li><li><b>3</b> 下載完成的 SCP 檔。</li></ol>
-      </section>
+      <section class="howto"><div><p class="eyebrow">HOW TO USE</p><h2>兩個檔案，一次完成。</h2></div><ol><li><b>1</b> 選擇 USC 譜面。</li><li><b>2</b> 加入音樂與選填封面。</li><li><b>3</b> 下載 GGR 封包。</li></ol></section>
     </main>
-    <footer>SCP PACKER <span>·</span> BUILT FOR OFFLINE PACKAGING</footer>
-    <script src="app.js"></script>
+    <footer>GUGARYTHM PACKER <span>·</span> BUILT FOR OFFLINE PACKAGING</footer>
+    <script type="module" src="app.js"></script>
   </body>
 </html>
