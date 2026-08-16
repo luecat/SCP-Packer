@@ -9,7 +9,8 @@ test('the page exposes only user-facing GGR inputs and module runtime', () => {
     assert.match(html, new RegExp(`id=["']${id}["']`));
   }
   assert.doesNotMatch(html, /id=["']metadata["']/);
-  assert.match(html, /<script\s+type="module"\s+src="app\.js"><\/script>/);
+  assert.match(html, /<link\s+rel="stylesheet"\s+href="style\.css\?v=\d+"\s*\/>/);
+  assert.match(html, /<script\s+type="module"\s+src="app\.js\?v=\d+"><\/script>/);
   assert.doesNotMatch(html, /\.scp|sonolus-engine-template/);
 });
 
