@@ -1,4 +1,5 @@
 import { buildGgrPackage, fileExtension, validatePackageInput } from './package-core.js';
+import { normalizeCoverFile } from './cover-conversion.js';
 
 const $ = selector => document.querySelector(selector);
 const status = $('#status');
@@ -42,15 +43,16 @@ packButton.addEventListener('click', async () => {
     status.textContent = '正在建立 Gugarythm 封包…';
 
     const uscText = await uscFile.text();
-    validatePackageInput({ uscText, audioName: audioFile.name, coverName: coverFile?.name });
+    const normalizedCover = coverFile ? await normalizeCoverFile(coverFile) : null;
+    validatePackageInput({ uscText, audioName: audioFile.name, coverName: normalizedCover?.name });
     const audioExtension = fileExtension(audioFile.name);
-    const coverExtension = coverFile ? fileExtension(coverFile.name) : '';
+    const coverExtension = normalizedCover ? fileExtension(normalizedCover.name) : '';
     const manifest = {
       format: 'gugarythm-package', version: 1, title,
       artist: $('#artist').value.trim(), author: $('#author').value.trim(),
       rating: finite($('#rating').value), offset: finite($('#offset').value),
       chart: 'chart.usc', audio: `audio.${audioExtension}`, metadata: 'metadata.json',
-      ...(coverFile && { cover: `cover.${coverExtension}` }),
+      ...(normalizedCover && { cover: `cover.${coverExtension}` }),
     };
     const metadataBytes = encoder.encode(JSON.stringify({
       title: manifest.title, artist: manifest.artist, author: manifest.author,
@@ -59,8 +61,8 @@ packButton.addEventListener('click', async () => {
     const blob = buildGgrPackage({
       uscBytes: encoder.encode(uscText),
       audioBytes: new Uint8Array(await audioFile.arrayBuffer()), audioName: audioFile.name,
-      metadataBytes, coverBytes: coverFile && new Uint8Array(await coverFile.arrayBuffer()),
-      coverName: coverFile?.name, manifest,
+      metadataBytes, coverBytes: normalizedCover && new Uint8Array(await normalizedCover.blob.arrayBuffer()),
+      coverName: normalizedCover?.name, manifest,
     });
     const url = URL.createObjectURL(blob);
     const anchor = document.createElement('a');
@@ -68,7 +70,7 @@ packButton.addEventListener('click', async () => {
     anchor.download = `${filenameSafe(title)}.ggr`;
     anchor.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
-    const entryCount = 4 + Number(Boolean(coverFile));
+    const entryCount = 4 + Number(Boolean(normalizedCover));
     status.textContent = `完成：已建立 ${entryCount} 個資源的 GGR 封包（${(blob.size / 1024 / 1024).toFixed(2)} MB）。`;
   } catch (error) {
     console.error(error);
